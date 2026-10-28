@@ -3,11 +3,26 @@ import { RouterLink, RouterView } from 'vue-router'
 import { useDark, useToggle } from '@vueuse/core'
 import { SunIcon, MoonIcon } from '@heroicons/vue/24/outline'
 import { useRouter, onBeforeRouteLeave } from 'vue-router'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { checkSession, chatErrorMessage } from './api/api'
 
 const isDark = useDark()
 const toggleDark = useToggle(isDark)
 const router = useRouter()
+const sessionState = ref('checking')
+const sessionMessage = ref('')
+
+async function refreshSession() {
+  sessionState.value = 'checking'
+  try {
+    await checkSession()
+    sessionState.value = 'ready'
+  } catch (error: any) {
+    sessionState.value = error?.status === 401 ? 'login' : 'error'
+    sessionMessage.value = chatErrorMessage(error)
+  }
+}
+onMounted(refreshSession)
 
 // 添加全局状态来跟踪当前路由
 const currentRoute = ref(router.currentRoute.value.path)
@@ -37,7 +52,15 @@ router.beforeEach((to, from, next) => {
       </button>
     </nav>
     <main class="main-content">
-      <router-view v-slot="{ Component }">
+      <div v-if="sessionState !== 'ready'" class="session-notice">
+        <p v-if="sessionState === 'checking'">正在确认登录状态…</p>
+        <template v-else>
+          <p>{{ sessionMessage }}</p>
+          <a v-if="sessionState === 'login'" href="/login">返回主站登录</a>
+          <button v-else @click="refreshSession">重试</button>
+        </template>
+      </div>
+      <router-view v-else v-slot="{ Component }">
         <transition name="page" mode="out-in">
           <component :is="Component" />
         </transition>
@@ -178,6 +201,23 @@ body {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 1rem;
+}
+
+.session-notice {
+  margin: 12vh auto;
+  text-align: center;
+  color: var(--text-color);
+  a, button {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: .65rem 1.2rem;
+    border: 0;
+    border-radius: .5rem;
+    color: white;
+    background: var(--primary-color);
+    text-decoration: none;
+    cursor: pointer;
+  }
 }
 
 .page-enter-active,

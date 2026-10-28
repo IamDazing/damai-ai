@@ -20,12 +20,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.damai.ai.security.AssistantConversationScope;
-import org.damai.ai.ai.function.MyOrdersTool;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
+import java.time.Duration;
 import java.util.stream.Collectors;
 
 import static org.damai.ai.constants.DaMaiConstant.RAG_VERSION;
@@ -42,9 +42,6 @@ public class ProgramController {
     @Resource
     private ChatClient assistantChatClient;
 
-    @Autowired
-    private MyOrdersTool myOrdersTool;
-    
     @Resource
     private ChatClient markdownChatClient;
     
@@ -61,13 +58,15 @@ public class ProgramController {
     public Flux<String> chat(@RequestParam("prompt") String prompt,
                                 @RequestParam("chatId") String chatId,
                                 @CookieValue(value = "Admin-Token", required = false) String token) {
-        String validToken = myOrdersTool.isAuthenticated(token) ? token : null;
         return assistantChatClient.prompt()
                 .user(prompt)
-                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, AssistantConversationScope.scope(validToken, chatId)))
-                .toolContext(Map.of("damaiToken", validToken == null ? "" : validToken))
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, AssistantConversationScope.scope(token, chatId)))
+                .toolContext(Map.of("damaiToken", token))
                 .stream()
-                .content();
+                .content()
+                .timeout(Duration.ofSeconds(45))
+                .switchIfEmpty(Flux.just("抱歉，暂时没有收到回复，请稍后再试。"))
+                .onErrorResume(e -> Flux.just("\n\n抱歉，回复中断或服务暂时不可用，请稍后再试。"));
     }
     
     @RequestMapping(value = "/rag", produces = "text/html;charset=utf-8")

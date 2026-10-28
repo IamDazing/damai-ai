@@ -20,23 +20,32 @@ public class MyOrdersTool {
         this.orderUrl = orderUrl;
     }
 
-    private JSONObject query(String token) {
+    private JSONObject query(String token, boolean sessionOnly) {
         String response = HttpRequest.post(orderUrl)
                 .header("token", token)
                 .header("Content-Type", "application/json")
-                .body("{\"userId\":0}")
-                .timeout(15000)
+                .body(sessionOnly ? "{\"userId\":0,\"sessionOnly\":true}" : "{\"userId\":0}")
+                .timeout(8000)
                 .execute().body();
         return JSON.parseObject(response);
     }
 
-    public boolean isAuthenticated(String token) {
-        if (token == null || token.isBlank()) return false;
+    public enum Authentication { AUTHENTICATED, LOGIN_REQUIRED, UNAVAILABLE }
+
+    public Authentication authenticate(String token) {
+        if (token == null || token.isBlank()) return Authentication.LOGIN_REQUIRED;
+        if (token.length() > 4096 || !token.matches("[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+")) {
+            return Authentication.LOGIN_REQUIRED;
+        }
         try {
-            JSONObject result = query(token);
-            return result != null && "0".equals(String.valueOf(result.get("code"))) && result.getJSONArray("data") != null;
+            JSONObject result = query(token, true);
+            if (result == null) return Authentication.UNAVAILABLE;
+            String code = String.valueOf(result.get("code"));
+            if ("0".equals(code) && result.getJSONArray("data") != null) return Authentication.AUTHENTICATED;
+            if ("516".equals(code) || "10055".equals(code) || "10051".equals(code)) return Authentication.LOGIN_REQUIRED;
+            return Authentication.UNAVAILABLE;
         } catch (Exception e) {
-            return false;
+            return Authentication.UNAVAILABLE;
         }
     }
 
@@ -44,10 +53,13 @@ public class MyOrdersTool {
     public String listMyOrders(ToolContext context) {
         Object token = context.getContext().get("damaiToken");
         if (!(token instanceof String) || ((String) token).isBlank()) {
+            if (Boolean.TRUE.equals(context.getContext().get("loginProvided"))) {
+                return "无法验证登录状态或订单服务暂时不可用，请稍后重试；如果仍有问题，请重新登录。";
+            }
             return "尚未登录大麦，请先返回主站登录后再查询订单。";
         }
         try {
-            JSONObject result = query((String) token);
+            JSONObject result = query((String) token, false);
             if (result == null || !"0".equals(String.valueOf(result.get("code")))) {
                 return "订单查询失败或登录已失效，请重新登录后重试。";
             }

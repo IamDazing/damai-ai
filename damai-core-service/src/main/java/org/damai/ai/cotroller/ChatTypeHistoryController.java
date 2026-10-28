@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.RestController;
 import org.damai.ai.security.AssistantConversationScope;
-import org.damai.ai.ai.function.MyOrdersTool;
 
 import java.util.List;
 
@@ -25,14 +24,11 @@ public class ChatTypeHistoryController {
 
     private final ChatMemory chatMemory;
 
-    private final MyOrdersTool myOrdersTool;
-    
     @RequestMapping("/type/history/list")
     public List<ChatTypeHistoryVo> getChatTypeHistoryList(@RequestParam("type") Integer type,
             @CookieValue(value = "Admin-Token", required = false) String token) {
         List<ChatTypeHistoryVo> histories = chatHistoryService.getChatTypeHistoryList(type);
         if (type != 2) return histories;
-        token = myOrdersTool.isAuthenticated(token) ? token : null;
         String prefix = AssistantConversationScope.prefix(token);
         return histories.stream().filter(item -> item.getChatId() != null && item.getChatId().startsWith(prefix))
                 .peek(item -> item.setChatId(item.getChatId().substring(prefix.length()))).toList();
@@ -42,7 +38,6 @@ public class ChatTypeHistoryController {
     public List<ChatHistoryMessageVO> getChatHistory(@RequestParam("chatId") String chatId,@RequestParam("type") Integer type,
             @CookieValue(value = "Admin-Token", required = false) String token) {
         if (type != 2 && AssistantConversationScope.isScoped(chatId)) throw new IllegalArgumentException("invalid conversation id");
-        if (type == 2 && !myOrdersTool.isAuthenticated(token)) token = null;
         List<Message> messages = chatMemory.get(type == 2 ? AssistantConversationScope.scope(token, chatId) : chatId);
         return messages.stream().map(ChatHistoryMessageVO::new).toList();
     }
@@ -51,7 +46,6 @@ public class ChatTypeHistoryController {
     public ApiResponse<Void> delete(@RequestParam("type") Integer type, @RequestParam("chatId") String chatId,
             @CookieValue(value = "Admin-Token", required = false) String token){
         if (type != 2 && AssistantConversationScope.isScoped(chatId)) throw new IllegalArgumentException("invalid conversation id");
-        if (type == 2 && !myOrdersTool.isAuthenticated(token)) token = null;
         chatHistoryService.delete(type, type == 2 ? AssistantConversationScope.scope(token, chatId) : chatId);
         return ApiResponse.ok();
     }

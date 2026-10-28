@@ -86,7 +86,7 @@ import { useDark } from '@vueuse/core'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import Chat from '../components/Chat.vue'
-import { chatAPI } from '../api/api'
+import { chatAPI, chatErrorMessage } from '../api/api'
 import LaptopIcon from '../components/icons/LaptopIcon.vue'
 import ChatBubbleIcon from '../components/icons/ChatBubbleIcon.vue'
 import PlusIcon from '../components/icons/PlusIcon.vue'
@@ -158,6 +158,8 @@ const submitMessage = async (content) => {
     isMarkdown: true  // 添加标记表示这是 Markdown 内容
   }
   activeMessages.value.push(assistantMessage)
+  const messageList = activeMessages.value
+  const messageIndex = messageList.length - 1
   isProcessing.value = true
   
   let totalContent = ''
@@ -167,35 +169,24 @@ const submitMessage = async (content) => {
     const decoder = new TextDecoder('utf-8')
     
     while (true) {
-      try {
-        const { value, done } = await reader.read()
-        if (done) break
-        
-        // 累积新内容
-        totalContent += decoder.decode(value)
-        
-        await nextTick(() => {
-          // 更新消息
-          const updatedMessage = {
-            ...assistantMessage,
-            content: totalContent,
-            isMarkdown: true  // 保持 Markdown 标记
-          }
-          const lastIndex = activeMessages.value.length - 1
-          activeMessages.value.splice(lastIndex, 1, updatedMessage)
-        })
-        await scrollToBottom()
-      } catch (readError) {
-        console.error('读取流错误:', readError)
+      const { value, done } = await reader.read()
+      if (done) {
+        totalContent += decoder.decode()
         break
       }
+      totalContent += decoder.decode(value, { stream: true })
+      messageList[messageIndex] = { ...assistantMessage, content: totalContent }
+      await scrollToBottom()
     }
+    if (!totalContent.trim()) totalContent = '抱歉，暂时没有收到回复，请稍后再试。'
+    messageList[messageIndex] = { ...assistantMessage, content: totalContent }
 
     checkAndUpdateChatTitles()
     
   } catch (error) {
     console.error('发送消息失败:', error)
-    assistantMessage.content = '抱歉，发生了错误，请稍后重试。'
+    const fallback = chatErrorMessage(error)
+    messageList[messageIndex] = { ...assistantMessage, content: totalContent.trim() ? `${totalContent}\n\n${fallback}` : fallback }
   } finally {
     isProcessing.value = false
     await scrollToBottom()
@@ -213,7 +204,7 @@ const switchConversation = async (chatId) => {
     }))
   } catch (error) {
     console.error('加载对话消息失败:', error)
-    activeMessages.value = []
+    activeMessages.value = [{ role: 'assistant', content: chatErrorMessage(error), timestamp: new Date() }]
   }
 }
 
@@ -231,6 +222,7 @@ const loadConversationHistory = async () => {
     console.error('加载聊天历史失败:', error)
     conversationHistory.value = []
     await initiateNewConversation()  // 等待 initiateNewConversation 完成
+    activeMessages.value.push({ role: 'assistant', content: chatErrorMessage(error), timestamp: new Date() })
   }
 }
 
@@ -852,4 +844,4 @@ onMounted(() => {
     }
   }
 }
-</style> 
+</style>

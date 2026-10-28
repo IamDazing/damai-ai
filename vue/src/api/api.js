@@ -1,5 +1,6 @@
 const BASE_URL = import.meta.env.PROD ? window.location.origin + '/ai-api' : 'http://localhost:6089'
 const TIMEOUT = 30000 // 30秒超时
+const STREAM_IDLE_TIMEOUT = 45000
 
 // 统一的错误处理
 class APIError extends Error {
@@ -42,6 +43,40 @@ function buildUrl(path, params = {}) {
   return url
 }
 
+function streamReader(response) {
+  if (!response.body) throw new APIError('响应内容为空', response.status)
+  const reader = response.body.getReader()
+  return {
+    async read() {
+      let timer
+      try {
+        return await Promise.race([
+          reader.read(),
+          new Promise((_, reject) => {
+            timer = setTimeout(() => {
+              reader.cancel().catch(() => {})
+              const error = new Error('回复超时')
+              error.name = 'TimeoutError'
+              reject(error)
+            }, STREAM_IDLE_TIMEOUT)
+          })
+        ])
+      } finally { clearTimeout(timer) }
+    }
+  }
+}
+
+export function chatErrorMessage(error) {
+  if (error?.status === 401) return '登录状态已失效，请返回主站登录后再试。'
+  if (error?.status === 503) return '暂时无法验证登录状态，请稍后再试。'
+  if (error?.name === 'AbortError' || error?.name === 'TimeoutError') return '回复超时了，请稍后再试。'
+  return '抱歉，服务暂时不可用或回复中断，请稍后再试。'
+}
+
+export async function checkSession() {
+  await fetchWithTimeout(buildUrl('/session'))
+}
+
 export const chatAPI = {
   // 发送聊天消息
   async simpleChat(data, chatId) {
@@ -51,7 +86,7 @@ export const chatAPI = {
         method: 'POST',
         body: data instanceof FormData ? data : new URLSearchParams({ prompt: data })
       })
-      return response.body.getReader()
+      return streamReader(response)
     } catch (error) {
       console.error('Simple Chat Error:', error)
       throw error
@@ -71,7 +106,7 @@ export const chatAPI = {
       }))
     } catch (error) {
       console.error('History Chat ID List Error:', error)
-      return []
+      throw error
     }
   },
 
@@ -88,7 +123,7 @@ export const chatAPI = {
       }))
     } catch (error) {
       console.error('History Chat History List Error:', error)
-      return []
+      throw error
     }
   },
 
@@ -97,7 +132,7 @@ export const chatAPI = {
     try {
       const url = buildUrl('/program/chat', { prompt, chatId })
       const response = await fetchWithTimeout(url)
-      return response.body.getReader()
+      return streamReader(response)
     } catch (error) {
       console.error('Assistant Message Error:', error)
       throw error
@@ -109,7 +144,7 @@ export const chatAPI = {
     try {
       const url = buildUrl('/program/rag', { prompt, chatId })
       const response = await fetchWithTimeout(url)
-      return response.body.getReader()
+      return streamReader(response)
     } catch (error) {
       console.error('RAG Message Error:', error)
       throw error
@@ -121,7 +156,7 @@ export const chatAPI = {
     try {
       const url = buildUrl('/program/chat/mcp', { prompt, chatId })
       const response = await fetchWithTimeout(url)
-      return response.body.getReader()
+      return streamReader(response)
     } catch (error) {
       console.error('Analysis Message Error:', error)
       throw error
