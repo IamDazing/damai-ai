@@ -30,6 +30,7 @@ router.beforeEach((to, from, next) => {
       <router-link to="/" class="logo">
         <span class="logo-text">大麦 AI</span>
       </router-link>
+      <a href="/" class="back-to-main">返回主站</a>
       <button @click="toggleDark()" class="theme-toggle" aria-label="切换主题">
         <SunIcon v-if="isDark" class="icon" />
         <MoonIcon v-else class="icon" />
@@ -110,6 +111,14 @@ body {
   top: 0;
   z-index: 100;
   transition: all 0.3s ease;
+}
+
+.back-to-main {
+  margin-left: auto;
+  margin-right: 1rem;
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 0.9rem;
 }
 
 .logo {
@@ -203,4 +212,3 @@ body {
   }
 }
 </style>
-

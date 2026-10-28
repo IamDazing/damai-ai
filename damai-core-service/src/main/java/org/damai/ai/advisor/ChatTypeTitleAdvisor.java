@@ -74,7 +74,6 @@ public class ChatTypeTitleAdvisor implements BaseChatMemoryAdvisor {
         String conversationId = getConversationId(chatClientResponse.context(), this.defaultConversationId);
         List<Message> messages = chatMemory.get(conversationId);
         List<ChatHistoryMessageVO> list = messages.stream().map(ChatHistoryMessageVO::new).toList();
-        log.info("会话记录: {}", JSON.toJSONString(list));
         
         ChatTypeHistory chatTypeHistory = chatTypeHistoryService.getChatTypeHistory(type, conversationId);
         if (Objects.isNull(chatTypeHistory) || StringUtil.isNotEmpty(chatTypeHistory.getTitle())) {
@@ -84,7 +83,6 @@ public class ChatTypeTitleAdvisor implements BaseChatMemoryAdvisor {
         String content = chatClient.prompt().user("请为以下对话总结一句简洁标题\n" + JSON.toJSONString(list) + "\n 只返回标题文本内容，不要其他样式")
                 .call().content();
         
-        log.info("生成的标题: {}", content);
         
         ChatTypeHistory updatedChatTypeHistory = new ChatTypeHistory();
         updatedChatTypeHistory.setId(chatTypeHistory.getId());

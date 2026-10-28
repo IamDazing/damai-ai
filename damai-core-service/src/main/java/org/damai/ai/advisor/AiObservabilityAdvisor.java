@@ -47,12 +47,12 @@ public class AiObservabilityAdvisor implements BaseChatMemoryAdvisor {
         String userMessage = request.prompt().getUserMessage().getText();
         String traceId = observabilityService.generateTraceId();
         
-        log.debug("AI调用开始 - traceId: {}, input: {}", traceId, userMessage);
+        log.debug("AI调用开始 - traceId: {}", traceId);
         
         Map<String, Object> newContext = new HashMap<>(request.context());
         newContext.put(CTX_START_TIME, System.currentTimeMillis());
         newContext.put(CTX_TRACE_ID, traceId);
-        newContext.put(CTX_USER_INPUT, truncate(userMessage, 500));
+        newContext.put(CTX_USER_INPUT, ChatType.ASSISTANT.getMsg().equals(requestType) ? "[已隐藏]" : truncate(userMessage, 500));
         
         return ChatClientRequest.builder()
                 .prompt(request.prompt())
@@ -82,7 +82,7 @@ public class AiObservabilityAdvisor implements BaseChatMemoryAdvisor {
             
             AiTrace trace = new AiTrace();
             trace.setTraceId(traceId);
-            trace.setConversationId(conversationId);
+            trace.setConversationId(ChatType.ASSISTANT.getMsg().equals(requestType) ? "[已隐藏]" : conversationId);
             trace.setModelName(modelName);
             trace.setRequestType(requestType);
             trace.setLatencyMs(latencyMs);
@@ -110,7 +110,9 @@ public class AiObservabilityAdvisor implements BaseChatMemoryAdvisor {
             if (chatResponse != null && chatResponse.getResult() != null && 
                     chatResponse.getResult().getOutput() != null) {
                 String aiOutput = chatResponse.getResult().getOutput().getText();
-                if (aiOutput == null || aiOutput.isEmpty()) {
+                if (ChatType.ASSISTANT.getMsg().equals(requestType)) {
+                    trace.setAiOutput("[已隐藏]");
+                } else if (aiOutput == null || aiOutput.isEmpty()) {
                     trace.setAiOutput("[流式输出]");
                 } else {
                     trace.setAiOutput(truncate(aiOutput, 1000));

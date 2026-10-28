@@ -18,10 +18,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.damai.ai.security.AssistantConversationScope;
+import org.damai.ai.ai.function.MyOrdersTool;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.damai.ai.constants.DaMaiConstant.RAG_VERSION;
@@ -37,6 +41,9 @@ public class ProgramController {
 
     @Resource
     private ChatClient assistantChatClient;
+
+    @Autowired
+    private MyOrdersTool myOrdersTool;
     
     @Resource
     private ChatClient markdownChatClient;
@@ -52,11 +59,13 @@ public class ProgramController {
     
     @RequestMapping(value = "/chat", produces = "text/html;charset=utf-8")
     public Flux<String> chat(@RequestParam("prompt") String prompt,
-                                @RequestParam("chatId") String chatId) {
-        // 请求模型
+                                @RequestParam("chatId") String chatId,
+                                @CookieValue(value = "Admin-Token", required = false) String token) {
+        String validToken = myOrdersTool.isAuthenticated(token) ? token : null;
         return assistantChatClient.prompt()
                 .user(prompt)
-                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, AssistantConversationScope.scope(validToken, chatId)))
+                .toolContext(Map.of("damaiToken", validToken == null ? "" : validToken))
                 .stream()
                 .content();
     }
@@ -64,6 +73,7 @@ public class ProgramController {
     @RequestMapping(value = "/rag", produces = "text/html;charset=utf-8")
     public Flux<String> rag(@RequestParam("prompt") String prompt,
                              @RequestParam("chatId") String chatId) {
+        if (AssistantConversationScope.isScoped(chatId)) throw new IllegalArgumentException("invalid conversation id");
         final Integer ragTwoVersionValue = 2;
         if (ragVersion.equals(ragTwoVersionValue)) {
             List<Document> documents = hybridSearchService.hybridSearch(prompt, 10, true);
@@ -99,6 +109,7 @@ public class ProgramController {
     @RequestMapping(value = "/chat/mcp", produces = "text/html;charset=utf-8")
     public Flux<String> chatMcp(@RequestParam("prompt") String prompt,
                              @RequestParam("chatId") String chatId) {
+        if (AssistantConversationScope.isScoped(chatId)) throw new IllegalArgumentException("invalid conversation id");
         // 请求模型（MCP工具已在 analysisChatClient 中全局配置）
         return analysisChatClient.prompt()
                 .user(prompt)

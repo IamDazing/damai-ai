@@ -18,6 +18,7 @@ import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.damai.ai.ai.function.MyOrdersTool;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -51,7 +52,7 @@ public class DaMaiAiAutoConfiguration {
     }
 
     @Bean
-    public ChatClient assistantChatClient(DeepSeekChatModel model, ChatMemory chatMemory, AiProgram aiProgram,
+    public ChatClient assistantChatClient(DeepSeekChatModel model, ChatMemory chatMemory, AiProgram aiProgram, MyOrdersTool myOrdersTool,
                                           ChatTypeHistoryService chatTypeHistoryService,
                                           @Qualifier("titleChatClient")ChatClient titleChatClient,
                                           AiObservabilityService observabilityService) {
@@ -59,7 +60,6 @@ public class DaMaiAiAutoConfiguration {
                 .builder(model)
                 .defaultSystem(DaMaiConstant.DA_MAI_SYSTEM_PROMPT)
                 .defaultAdvisors(
-                        new SimpleLoggerAdvisor(),
                         ChatTypeHistoryAdvisor.builder(chatTypeHistoryService).type(ChatType.ASSISTANT.getCode())
                                 .order(CHAT_TYPE_HISTORY_ADVISOR_ORDER).build(),
                         ChatTypeTitleAdvisor.builder(chatTypeHistoryService).type(ChatType.ASSISTANT.getCode())
@@ -72,7 +72,7 @@ public class DaMaiAiAutoConfiguration {
                                 .requestType(ChatType.ASSISTANT.getMsg())
                                 .build()
                 )
-                .defaultTools(aiProgram)
+                .defaultTools(aiProgram, myOrdersTool)
                 .build();
     }
     
@@ -108,9 +108,6 @@ public class DaMaiAiAutoConfiguration {
     public ChatClient titleChatClient(DeepSeekChatModel model) {
         return ChatClient
                 .builder(model)
-                .defaultAdvisors(
-                        new SimpleLoggerAdvisor()
-                )
                 .build();
     }
     

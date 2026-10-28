@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:6089'
+const BASE_URL = import.meta.env.PROD ? window.location.origin + '/ai-api' : 'http://localhost:6089'
 const TIMEOUT = 30000 // 30秒超时
 
 // 统一的错误处理
@@ -139,7 +139,7 @@ export const chatAPI = {
       throw error
     }
   }
-} 
+}
 
 // AI可观测性API
 export const observabilityAPI = {
@@ -194,4 +194,4 @@ export const observabilityAPI = {
       throw error
     }
   }
-} 
+}
