@@ -1,0 +1,4 @@
+org.damai.ai.config.DaMaiAiAutoConfiguration
+org.damai.ai.config.DaMaiRagAiAutoConfiguration
+org.damai.ai.config.WebMvcAutoConfiguration
+org.damai.ai.mybatisplus.MybatisPlusAutoConfiguration
