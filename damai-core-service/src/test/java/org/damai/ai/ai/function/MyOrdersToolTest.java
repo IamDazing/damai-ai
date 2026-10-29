@@ -22,7 +22,7 @@ class MyOrdersToolTest {
             boolean valid = "test.token.valid".equals(token);
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             String json = "test.token.unavailable".equals(token) ? "{\"code\":-100}" : valid ?
-                    (body.contains("sessionOnly") ? "{\"code\":0,\"data\":[]}" : "{\"code\":0,\"data\":[{\"orderNumber\":\"42\",\"programTitle\":\"Concert\",\"orderStatus\":3,\"userId\":\"private\"}]}") : "{\"code\":516}";
+                    (body.contains("sessionOnly") ? "{\"code\":0,\"data\":[]}" : "{\"code\":0,\"data\":[{\"orderNumber\":\"42\",\"programTitle\":\"Concert\",\"orderStatus\":3,\"payOrderType\":99,\"userId\":\"private\"}]}") : "{\"code\":516}";
             byte[] result = json.getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(200, result.length); exchange.getResponseBody().write(result); exchange.close();
         });
@@ -39,6 +39,7 @@ class MyOrdersToolTest {
             String result = callback.call("{}", new ToolContext(Map.of("damaiToken", "test.token.valid")));
             assertTrue(result.contains("Concert"));
             assertTrue(result.contains("已支付"));
+            assertTrue(result.contains("模拟"));
             assertFalse(result.contains("private"));
             assertFalse(result.contains("test.token.valid"));
         } finally { server.stop(0); }

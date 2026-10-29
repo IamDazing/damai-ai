@@ -78,7 +78,7 @@ public class MyOrdersTool {
                 safe.put("orderStatusDescription", status == null ? "未知" : switch (status) {
                     case 1 -> "未支付";
                     case 2 -> "已取消";
-                    case 3 -> "已支付";
+                    case 3 -> Integer.valueOf(99).equals(order.getInteger("payOrderType")) ? "已支付（模拟，未实际付款）" : "已支付";
                     case 4 -> "已退单";
                     default -> "未知";
                 });
