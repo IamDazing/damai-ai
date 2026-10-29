@@ -38,7 +38,6 @@ public class QueryRewriteAdvisor implements BaseAdvisor {
     @Override
     public ChatClientRequest before(ChatClientRequest request, AdvisorChain chain) {
         String originalQuery = request.prompt().getUserMessage().getText();
-        log.info("原始Query: {}", originalQuery);
         
         String enhancedQuery;
         if (enableLLMRewrite && rewriteClient != null) {
@@ -47,7 +46,7 @@ public class QueryRewriteAdvisor implements BaseAdvisor {
             enhancedQuery = ruleBasedExpand(originalQuery);
         }
         
-        log.info("改写后Query: {}", enhancedQuery);
+        log.debug("检索问题改写完成");
         
         return request;
     }

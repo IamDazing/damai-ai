@@ -48,7 +48,7 @@ public class StructuredOutputService {
                 .call()
                 .content();
         
-        log.debug("意图识别原始响应: {}", response);
+        log.debug("意图识别响应已生成");
         
         return converter.convert(response);
     }
@@ -83,7 +83,7 @@ public class StructuredOutputService {
                 .call()
                 .content();
         
-        log.debug("节目推荐原始响应: {}", response);
+        log.debug("节目推荐响应已生成");
         
         return converter.convert(response);
     }
@@ -107,7 +107,7 @@ public class StructuredOutputService {
                 .call()
                 .content();
         
-        log.debug("结构化输出原始响应: {}", response);
+        log.debug("结构化输出响应已生成");
         
         return converter.convert(response);
     }
