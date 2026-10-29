@@ -19,6 +19,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -47,7 +48,8 @@ public class DaMaiRagAiAutoConfiguration {
     public ChatClient markdownChatClientV1(OpenAiChatModel model, ChatMemory chatMemory, VectorStore vectorStore,
                                            MarkdownLoader markdownLoader, ChatTypeHistoryService chatTypeHistoryService,
                                            @Qualifier("titleChatClient")ChatClient titleChatClient,
-                                           AiObservabilityService observabilityService, RagAvailability ragAvailability) {
+                                           AiObservabilityService observabilityService, RagAvailability ragAvailability,
+                                           @Value("${spring.ai.openai.chat.options.model:qwen-plus}") String modelName) {
         List<Document> documentList = markdownLoader.loadMarkdowns();
         ragAvailability.initialize(vectorStore, documentList);
         
@@ -70,7 +72,7 @@ public class DaMaiRagAiAutoConfiguration {
                         // AI增强: Observability可观测性
                         AiObservabilityAdvisor.builder(observabilityService)
                                 .order(OBSERVABILITY_ADVISOR_ORDER)
-                                .modelName("qwen-max-latest")
+                                .modelName(modelName)
                                 .requestType(ChatType.MARKDOWN.getMsg())
                                 .build()
                 )
@@ -83,7 +85,8 @@ public class DaMaiRagAiAutoConfiguration {
                                            MarkdownLoader markdownLoader, ChatTypeHistoryService chatTypeHistoryService,
                                            @Qualifier("titleChatClient")ChatClient titleChatClient,
                                            HybridSearchService hybridSearchService,
-                                           AiObservabilityService observabilityService, RagAvailability ragAvailability) {
+                                           AiObservabilityService observabilityService, RagAvailability ragAvailability,
+                                           @Value("${spring.ai.openai.chat.options.model:qwen-plus}") String modelName) {
         List<Document> documentList = markdownLoader.loadMarkdowns();
         ragAvailability.initialize(vectorStore, documentList);
         
@@ -106,7 +109,7 @@ public class DaMaiRagAiAutoConfiguration {
                         // AI增强: Observability可观测性
                         AiObservabilityAdvisor.builder(observabilityService)
                                 .order(OBSERVABILITY_ADVISOR_ORDER)
-                                .modelName("qwen-max-latest")
+                                .modelName(modelName)
                                 .requestType(ChatType.MARKDOWN.getMsg())
                                 .build()
                 )
