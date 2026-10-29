@@ -71,8 +71,9 @@ public class ProgramController {
     
     @RequestMapping(value = "/rag", produces = "text/html;charset=utf-8")
     public Flux<String> rag(@RequestParam("prompt") String prompt,
-                             @RequestParam("chatId") String chatId) {
-        if (AssistantConversationScope.isScoped(chatId)) throw new IllegalArgumentException("invalid conversation id");
+                             @RequestParam("chatId") String chatId,
+                             @CookieValue(value = "Admin-Token", required = false) String token) {
+        String scopedChatId = AssistantConversationScope.scope(token, chatId);
         final Integer ragTwoVersionValue = 2;
         if (ragVersion.equals(ragTwoVersionValue)) {
             List<Document> documents = hybridSearchService.hybridSearch(prompt, 10, true);
@@ -94,25 +95,26 @@ public class ProgramController {
             
             return markdownChatClient.prompt()
                     .user(enhancedPrompt)
-                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
+                    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, scopedChatId))
                     .stream()
                     .content();
         }
         return markdownChatClient.prompt()
                 .user(prompt)
-                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, scopedChatId))
                 .stream()
                 .content();
     }
     
     @RequestMapping(value = "/chat/mcp", produces = "text/html;charset=utf-8")
     public Flux<String> chatMcp(@RequestParam("prompt") String prompt,
-                             @RequestParam("chatId") String chatId) {
-        if (AssistantConversationScope.isScoped(chatId)) throw new IllegalArgumentException("invalid conversation id");
+                             @RequestParam("chatId") String chatId,
+                             @CookieValue(value = "Admin-Token", required = false) String token) {
+        String scopedChatId = AssistantConversationScope.scope(token, chatId);
         // 请求模型（MCP工具已在 analysisChatClient 中全局配置）
         return analysisChatClient.prompt()
                 .user(prompt)
-                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, chatId))
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, scopedChatId))
                 .stream()
                 .content();
     }

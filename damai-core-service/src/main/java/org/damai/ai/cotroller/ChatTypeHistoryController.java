@@ -28,7 +28,6 @@ public class ChatTypeHistoryController {
     public List<ChatTypeHistoryVo> getChatTypeHistoryList(@RequestParam("type") Integer type,
             @CookieValue(value = "Admin-Token", required = false) String token) {
         List<ChatTypeHistoryVo> histories = chatHistoryService.getChatTypeHistoryList(type);
-        if (type != 2) return histories;
         String prefix = AssistantConversationScope.prefix(token);
         return histories.stream().filter(item -> item.getChatId() != null && item.getChatId().startsWith(prefix))
                 .peek(item -> item.setChatId(item.getChatId().substring(prefix.length()))).toList();
@@ -37,16 +36,14 @@ public class ChatTypeHistoryController {
     @RequestMapping("/history/message/list")
     public List<ChatHistoryMessageVO> getChatHistory(@RequestParam("chatId") String chatId,@RequestParam("type") Integer type,
             @CookieValue(value = "Admin-Token", required = false) String token) {
-        if (type != 2 && AssistantConversationScope.isScoped(chatId)) throw new IllegalArgumentException("invalid conversation id");
-        List<Message> messages = chatMemory.get(type == 2 ? AssistantConversationScope.scope(token, chatId) : chatId);
+        List<Message> messages = chatMemory.get(AssistantConversationScope.scope(token, chatId));
         return messages.stream().map(ChatHistoryMessageVO::new).toList();
     }
     
     @RequestMapping(value = "/delete")
     public ApiResponse<Void> delete(@RequestParam("type") Integer type, @RequestParam("chatId") String chatId,
             @CookieValue(value = "Admin-Token", required = false) String token){
-        if (type != 2 && AssistantConversationScope.isScoped(chatId)) throw new IllegalArgumentException("invalid conversation id");
-        chatHistoryService.delete(type, type == 2 ? AssistantConversationScope.scope(token, chatId) : chatId);
+        chatHistoryService.delete(type, AssistantConversationScope.scope(token, chatId));
         return ApiResponse.ok();
     }
     
