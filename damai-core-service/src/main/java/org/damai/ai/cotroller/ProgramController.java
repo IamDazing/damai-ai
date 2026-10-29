@@ -2,6 +2,7 @@ package org.damai.ai.cotroller;
 
 import jakarta.annotation.Resource;
 import org.damai.ai.ai.function.call.ProgramCall;
+import org.damai.ai.config.RagAvailability;
 import org.damai.ai.ai.function.dto.ProgramSearchFunctionDto;
 import org.damai.ai.dto.ProgramDetailDto;
 import org.damai.ai.service.HybridSearchService;
@@ -39,6 +40,9 @@ public class ProgramController {
     @Autowired
     private ProgramCall programCall;
 
+    @Autowired
+    private RagAvailability ragAvailability;
+
     @Resource
     private ChatClient assistantChatClient;
 
@@ -74,6 +78,7 @@ public class ProgramController {
                              @RequestParam("chatId") String chatId,
                              @CookieValue(value = "Admin-Token", required = false) String token) {
         String scopedChatId = AssistantConversationScope.scope(token, chatId);
+        if (!ragAvailability.isReady()) return Flux.just("抱歉，规则知识库暂时不可用，请稍后再试。");
         final Integer ragTwoVersionValue = 2;
         if (ragVersion.equals(ragTwoVersionValue)) {
             List<Document> documents = hybridSearchService.hybridSearch(prompt, 10, true);

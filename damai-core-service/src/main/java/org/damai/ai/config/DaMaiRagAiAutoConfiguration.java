@@ -47,9 +47,9 @@ public class DaMaiRagAiAutoConfiguration {
     public ChatClient markdownChatClientV1(OpenAiChatModel model, ChatMemory chatMemory, VectorStore vectorStore,
                                            MarkdownLoader markdownLoader, ChatTypeHistoryService chatTypeHistoryService,
                                            @Qualifier("titleChatClient")ChatClient titleChatClient,
-                                           AiObservabilityService observabilityService) {
+                                           AiObservabilityService observabilityService, RagAvailability ragAvailability) {
         List<Document> documentList = markdownLoader.loadMarkdowns();
-        vectorStore.add(documentList);
+        ragAvailability.initialize(vectorStore, documentList);
         
         return ChatClient
                 .builder(model)
@@ -83,9 +83,9 @@ public class DaMaiRagAiAutoConfiguration {
                                            MarkdownLoader markdownLoader, ChatTypeHistoryService chatTypeHistoryService,
                                            @Qualifier("titleChatClient")ChatClient titleChatClient,
                                            HybridSearchService hybridSearchService,
-                                           AiObservabilityService observabilityService) {
+                                           AiObservabilityService observabilityService, RagAvailability ragAvailability) {
         List<Document> documentList = markdownLoader.loadMarkdowns();
-        vectorStore.add(documentList);
+        ragAvailability.initialize(vectorStore, documentList);
         
         hybridSearchService.cacheDocuments(documentList);
         
