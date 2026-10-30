@@ -50,8 +50,6 @@ damai-ai
 
 ![XERJ 邮件截图（经 AI 脱敏处理）](docs/images/xerj-email.png)
 
-<sub>邮件图片经 AI 脱敏处理，画面并非原始截图。</sub>
-
 ## 许可证
 
 [Apache License 2.0](LICENSE)
