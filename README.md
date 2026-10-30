@@ -48,6 +48,10 @@ damai-ai
 
 [登录校验与异常提示提交](https://github.com/IamDazing/damai-ai/commit/9b6a7ff05481960a9a71bb2c91c60014ccc10f9c)获 [XERJ](https://github.com/xerj-org/xerj) 关注。根据对方邮件，该提交已被选入 XERJ Corpus Hub 的参考代码收录计划。
 
+![XERJ 邮件截图（经 AI 脱敏处理）](docs/images/xerj-email.png)
+
+<sub>邮件图片经 AI 脱敏处理，画面并非原始截图。</sub>
+
 ## 许可证
 
 [Apache License 2.0](LICENSE)
