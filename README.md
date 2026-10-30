@@ -44,6 +44,10 @@ damai-ai
 - **模型使用观测**：记录调用轨迹、Token 使用及价格配置，为模型调用分析提供数据。
 - **多模型配置**：提供百炼、DeepSeek 和 Ollama 的配置，按实际部署环境选择和配置。
 
+## 🌟 社区关注
+
+[登录校验与异常提示提交](https://github.com/IamDazing/damai-ai/commit/9b6a7ff05481960a9a71bb2c91c60014ccc10f9c)获 [XERJ](https://github.com/xerj-org/xerj) 关注。根据对方邮件，该提交已被选入 XERJ Corpus Hub 的参考代码收录计划。
+
 ## 许可证
 
 [Apache License 2.0](LICENSE)
